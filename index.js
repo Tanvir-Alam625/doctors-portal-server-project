@@ -1,7 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const {
+  MongoClient,
+  ServerApiVersion,
+  ConnectionCheckedInEvent,
+} = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -14,12 +18,64 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
-client.connect((err) => {
-  const collection = client.db("test").collection("devices");
-  // perform actions on the collection object
-  console.log("connection successfully");
-  // client.close();
-});
+
+async function run() {
+  try {
+    await client.connect();
+    const serviceCollection = await client
+      .db("doctors-portal")
+      .collection("service");
+    const bookedCollection = await client.db("booked").collection("bookedData");
+
+    app.get("/service", async (req, res) => {
+      const query = {};
+      const cursor = serviceCollection.find(query);
+      const service = await cursor.toArray();
+      res.send(service);
+    });
+    app.post("/booking", async (req, res) => {
+      const booking = req.body;
+      const query = {
+        treatment: booking.treatment,
+        date: booking.date,
+        patientEmail: booking.patientEmail,
+      };
+      const exists = await bookedCollection.findOne(query);
+      if (exists) {
+        return res.send({ success: false, exists });
+      }
+      const result = await bookedCollection.insertOne(booking);
+      res.send({ success: true, result });
+    });
+    app.get("/available", async (req, res) => {
+      const date = req.query.date || "May 15, 2022";
+      // get service collection all data
+      const services = await serviceCollection.find().toArray();
+      // get booking collection all data
+      const query = { date: date };
+      const bookings = await bookedCollection.find(query).toArray();
+
+      services.forEach((service) => {
+        const serviceBookings = bookings.filter(
+          book.treatment === service.name
+        );
+      });
+
+      res.send(serviceBookings);
+    });
+    /**
+     * API Naming Convention
+     * app.get('/booking') // get all bookings in this collection. or get more than one or by filter
+     * app.get('/booking/:id') // get a specific booking
+     * app.post('/booking') // add a new booking
+     * app.patch('/booking/:id) //
+     * app.delete('/booking/:id) //
+     */
+  } finally {
+  }
+}
+run().catch(console.dir);
+
 app.get("/", (req, res) => {
   res.send("Hello World! doctors portal");
 });
