@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+var jwt = require("jsonwebtoken");
 const {
   MongoClient,
   ServerApiVersion,
@@ -54,7 +55,8 @@ async function run() {
 
     // data load for dashboard/myAppointment table
     app.get("/booking", async (req, res) => {
-      const query = {};
+      const patientEmail = req.query.email;
+      const query = { patientEmail: patientEmail };
       const cursor = bookedCollection.find(query);
       const booked = await cursor.toArray();
       res.send(booked);
@@ -85,6 +87,9 @@ async function run() {
       const user = req.body;
       const filter = { email: email };
       const options = { upsert: true };
+      const token = jwt.sign({ email: email }, process.env.ACCESS_TOKEN, {
+        expiresIn: "2d",
+      });
       const updateDoc = {
         $set: {
           user,
@@ -95,7 +100,7 @@ async function run() {
         updateDoc,
         options
       );
-      res.send(result);
+      res.send({ result, token: token });
     });
     /**
      * API Naming Convention
