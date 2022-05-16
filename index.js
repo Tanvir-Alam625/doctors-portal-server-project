@@ -126,18 +126,33 @@ async function run() {
       );
       res.send({ result, token: token });
     });
-    // make admin api data
-    app.put("/user/admin/:email", async (req, res) => {
+    // secure admin panel
+    app.get("/admin/:email", async (req, res) => {
       const email = req.params.email;
-      const user = req.body;
-      const filter = { email: email };
-      const updateDoc = {
-        $set: {
-          role: "admin",
-        },
-      };
-      const result = await usersCollection.updateOne(filter, updateDoc);
-      res.send(result);
+      const result = await usersCollection.findOne({ email: email });
+      const isAdmin = result.role === "admin";
+      console.log(isAdmin);
+      res.send({ admin: isAdmin });
+    });
+    // make admin api data
+    app.put("/user/admin/:email", tokenVerify, async (req, res) => {
+      const email = req.params.email;
+      const requester = req.decoded.email;
+      const requesterUser = await usersCollection.findOne({ email: requester });
+      const requestAccount = requesterUser.role === "admin";
+      if (requestAccount) {
+        const user = req.body;
+        const filter = { email: email };
+        const updateDoc = {
+          $set: {
+            role: "admin",
+          },
+        };
+        const result = await usersCollection.updateOne(filter, updateDoc);
+        return res.send(result);
+      } else {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
     });
     /**
      * API Naming Convention
