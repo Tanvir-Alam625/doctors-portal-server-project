@@ -68,7 +68,7 @@ async function run() {
     });
 
     // all users api data
-    app.get("/users", async (req, res) => {
+    app.get("/users", tokenVerify, async (req, res) => {
       const users = await usersCollection.find().toArray();
       res.send(users);
     });
@@ -125,6 +125,19 @@ async function run() {
         options
       );
       res.send({ result, token: token });
+    });
+    // make admin api data
+    app.put("/user/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const updateDoc = {
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await usersCollection.updateOne(filter, updateDoc);
+      res.send(result);
     });
     /**
      * API Naming Convention
