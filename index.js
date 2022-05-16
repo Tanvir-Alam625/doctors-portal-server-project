@@ -22,17 +22,21 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+    // all collections
     const serviceCollection = await client
       .db("doctors-portal")
       .collection("service");
     const bookedCollection = await client.db("booked").collection("bookedData");
-
+    const usersCollection = await client.db("booked").collection("users");
+    // all api
+    // get service load data api
     app.get("/service", async (req, res) => {
       const query = {};
       const cursor = serviceCollection.find(query);
       const service = await cursor.toArray();
       res.send(service);
     });
+    // post booking api data
     app.post("/booking", async (req, res) => {
       const booking = req.body;
       const query = {
@@ -55,7 +59,7 @@ async function run() {
       const booked = await cursor.toArray();
       res.send(booked);
     });
-
+    // filter available api data
     app.get("/available", async (req, res) => {
       const date = req.query.date;
       // get service collection all data
@@ -74,6 +78,24 @@ async function run() {
         service.slots = available;
       });
       res.send(services);
+    });
+    // users api data
+    app.put("/user/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = req.body;
+      const filter = { email: email };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
+          user,
+        },
+      };
+      const result = await usersCollection.updateOne(
+        filter,
+        updateDoc,
+        options
+      );
+      res.send(result);
     });
     /**
      * API Naming Convention
