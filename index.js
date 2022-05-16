@@ -47,8 +47,17 @@ async function run() {
       const result = await bookedCollection.insertOne(booking);
       res.send({ success: true, result });
     });
+
+    // data load for dashboard/myAppointment table
+    app.get("/booking", async (req, res) => {
+      const query = {};
+      const cursor = bookedCollection.find(query);
+      const booked = await cursor.toArray();
+      res.send(booked);
+    });
+
     app.get("/available", async (req, res) => {
-      const date = req.query.date || "May 15, 2022";
+      const date = req.query.date;
       // get service collection all data
       const services = await serviceCollection.find().toArray();
       // get booking collection all data
@@ -56,12 +65,15 @@ async function run() {
       const bookings = await bookedCollection.find(query).toArray();
 
       services.forEach((service) => {
-        const serviceBookings = bookings.filter(
-          book.treatment === service.name
+        const serviceBooking = bookings.filter(
+          (book) => book.treatment === service.name
         );
+        const booked = serviceBooking.map((s) => s.slot);
+        // service.booked = booked;
+        const available = service.slots.filter((s) => !booked.includes(s));
+        service.slots = available;
       });
-
-      res.send(serviceBookings);
+      res.send(services);
     });
     /**
      * API Naming Convention
