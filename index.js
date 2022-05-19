@@ -43,11 +43,30 @@ async function run() {
       .collection("service");
     const bookedCollection = await client.db("booked").collection("bookedData");
     const usersCollection = await client.db("booked").collection("users");
+    const doctorsCollection = await client.db("booked").collection("doctors");
+
+    // middleware
+    const adminVerify = async (req, res, next) => {
+      const requester = req.decoded.email;
+      const requesterUser = await usersCollection.findOne({ email: requester });
+      const requestAccount = requesterUser.role === "admin";
+      if (requestAccount) {
+        next();
+      } else {
+        return res.status(403).send({ message: "Forbidden Access" });
+      }
+    };
     // all api
+    // post doctors
+    app.post("/doctors", async (req, res) => {
+      const doctor = req.body;
+      const result = await doctorsCollection.insertOne(doctor);
+      res.send(result);
+    });
     // get service load data api
     app.get("/service", async (req, res) => {
       const query = {};
-      const cursor = serviceCollection.find(query);
+      const cursor = serviceCollection.find(query).project({ name: 1 });
       const service = await cursor.toArray();
       res.send(service);
     });
@@ -134,13 +153,12 @@ async function run() {
       res.send({ admin: isAdmin });
     });
     // make admin api data
-    app.put("/user/admin/:email", tokenVerify, async (req, res) => {
-      const email = req.params.email;
-      const requester = req.decoded.email;
-      const requesterUser = await usersCollection.findOne({ email: requester });
-      const requestAccount = requesterUser.role === "admin";
-      if (requestAccount) {
-        const user = req.body;
+    app.put(
+      "/user/admin/:email",
+      tokenVerify,
+      adminVerify,
+      async (req, res) => {
+        const email = req.params.email;
         const filter = { email: email };
         const updateDoc = {
           $set: {
@@ -149,10 +167,8 @@ async function run() {
         };
         const result = await usersCollection.updateOne(filter, updateDoc);
         return res.send(result);
-      } else {
-        return res.status(403).send({ message: "Forbidden Access" });
       }
-    });
+    );
     /**
      * API Naming Convention
      * app.get('/booking') // get all bookings in this collection. or get more than one or by filter
