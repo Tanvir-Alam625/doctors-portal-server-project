@@ -57,6 +57,12 @@ async function run() {
       }
     };
     // all api
+    app.get("/doctors", async (req, res) => {
+      const doctors = await doctorsCollection.find().toArray();
+      res.send(doctors);
+    });
+    // get doctors user
+
     // post doctors
     app.post("/doctors", async (req, res) => {
       const doctor = req.body;
