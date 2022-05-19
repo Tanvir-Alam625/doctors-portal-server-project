@@ -6,6 +6,7 @@ const {
   MongoClient,
   ServerApiVersion,
   ConnectionCheckedInEvent,
+  ObjectId,
 } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5000;
@@ -60,6 +61,12 @@ async function run() {
     app.get("/doctors", async (req, res) => {
       const doctors = await doctorsCollection.find().toArray();
       res.send(doctors);
+    });
+    app.delete("/doctor/:id", tokenVerify, adminVerify, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await doctorsCollection.deleteOne(query);
+      res.send(result);
     });
     // get doctors user
 
