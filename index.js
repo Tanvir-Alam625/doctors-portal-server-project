@@ -8,6 +8,8 @@ const {
   ConnectionCheckedInEvent,
   ObjectId,
 } = require("mongodb");
+var nodemailer = require("nodemailer");
+var sgTransport = require("nodemailer-sendgrid-transport");
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -20,6 +22,11 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
+
+// nodemailer sendGrid  function
+const sendEmailMessage = (booking) => {};
+
+// jwt verify token function
 const tokenVerify = (req, res, next) => {
   const authorization = req.headers.authorization;
   if (!authorization) {
