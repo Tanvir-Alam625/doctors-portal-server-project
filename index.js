@@ -64,6 +64,13 @@ async function run() {
         return res.status(403).send({ message: "Forbidden Access" });
       }
     };
+    // payment data load
+    app.get("/payment/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await bookedCollection.findOne(query);
+      res.send(result);
+    });
     // all api
     app.get("/doctors", async (req, res) => {
       const doctors = await doctorsCollection.find().toArray();
