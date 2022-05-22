@@ -10,6 +10,7 @@ const {
 } = require("mongodb");
 var nodemailer = require("nodemailer");
 var sgTransport = require("nodemailer-sendgrid-transport");
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -70,6 +71,18 @@ async function run() {
       const query = { _id: ObjectId(id) };
       const result = await bookedCollection.findOne(query);
       res.send(result);
+    });
+    //payment method
+    app.post("/create-payment-intent", tokenVerify, async (req, res) => {
+      const service = req.body;
+      const price = service.price;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({ clientSecret: paymentIntent.client_secret });
     });
     // all api
     app.get("/doctors", async (req, res) => {
