@@ -53,6 +53,7 @@ async function run() {
     const bookedCollection = await client.db("booked").collection("bookedData");
     const usersCollection = await client.db("booked").collection("users");
     const doctorsCollection = await client.db("booked").collection("doctors");
+    const paymentsCollection = await client.db("booked").collection("payments");
 
     // middleware
     const adminVerify = async (req, res, next) => {
@@ -83,6 +84,21 @@ async function run() {
         payment_method_types: ["card"],
       });
       res.send({ clientSecret: paymentIntent.client_secret });
+    });
+    // update booking data add payment transactionID
+    app.patch("/booking/:id", tokenVerify, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const updatePayment = await paymentsCollection.insertOne(payment);
+      const result = await bookedCollection.updateOne(filter, updatedDoc);
+      res.send(result);
     });
     // all api
     app.get("/doctors", async (req, res) => {
